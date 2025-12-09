@@ -1,0 +1,35 @@
+```
+# Compiled files
+*.class
+*.o
+*.obj
+*.out
+
+# Dependencies
+lib/
+libs/
+jars/
+target/
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build artifacts
+build/
+dist/
+out/
+
+# Package manager
+node_modules/
+```

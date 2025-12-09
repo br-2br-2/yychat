@@ -17,6 +17,7 @@ public class FriendChat extends JFrame implements ActionListener {
     JScrollPane jsp;
     JTextField jtf;
     JButton jb;
+    JButton fileButton; // 添加文件传输按钮
     String sender;
     String receiver;
 
@@ -31,11 +32,15 @@ public class FriendChat extends JFrame implements ActionListener {
 
         jtf = new JTextField(15);//单行文本框
         jb = new JButton("发送");
+        JButton fileButton = new JButton("发送文件"); // 添加发送文件按钮
         jb.addActionListener(this);
+        fileButton.addActionListener(this);
 
         jb.setForeground(Color.blue);
         JPanel jp = new JPanel();
-        jp.add(jtf);jp.add(jb);
+        jp.add(jtf);
+        jp.add(jb);
+        jp.add(fileButton); // 将文件按钮添加到面板
         this.add(jp, "South");
 
         this.setSize(350, 250);
@@ -58,22 +63,52 @@ public class FriendChat extends JFrame implements ActionListener {
     }
 
     public void actionPerformed(ActionEvent e) {
-        if (e.getSource() == jb)
+        if (e.getSource() == jb) { // 普通消息发送
             jta.append(jtf.getText() + "\r\n");
 
-        Message mess = new Message();
-        mess.setSender(sender);
-        mess.setReceiver(receiver);
-        System.out.println("sender: "+sender + " receiver: " + receiver);
-        mess.setContent(jtf.getText());
-        mess.setMessageType(MessageType.COMMON_CHAT_MESSAGE);
+            Message mess = new Message();
+            mess.setSender(sender);
+            mess.setReceiver(receiver);
+            System.out.println("sender: " + sender + " receiver: " + receiver);
+            mess.setContent(jtf.getText());
+            mess.setMessageType(MessageType.COMMON_CHAT_MESSAGE);
 
-        try {
-            OutputStream os = YychatClientConnection.s.getOutputStream();
-            ObjectOutputStream oos = new ObjectOutputStream(os);
-            oos.writeObject(mess);
-        } catch (IOException e1) {
-            e1.printStackTrace();
+            try {
+                OutputStream os = YychatClientConnection.s.getOutputStream();
+                ObjectOutputStream oos = new ObjectOutputStream(os);
+                oos.writeObject(mess);
+                jtf.setText(""); // 清空输入框
+            } catch (IOException e1) {
+                e1.printStackTrace();
+            }
+        } else if (e.getSource() == fileButton) { // 文件传输
+            // 打开文件选择对话框
+            JFileChooser fileChooser = new JFileChooser();
+            int result = fileChooser.showOpenDialog(this);
+            
+            if (result == JFileChooser.APPROVE_OPTION) {
+                java.io.File selectedFile = fileChooser.getSelectedFile();
+                
+                // 创建文件传输请求消息
+                Message fileMessage = new Message();
+                fileMessage.setSender(sender);
+                fileMessage.setReceiver(receiver);
+                fileMessage.setFileName(selectedFile.getName());
+                fileMessage.setFileSize(selectedFile.length());
+                fileMessage.setTransferId(java.util.UUID.randomUUID().toString()); // 生成唯一传输ID
+                fileMessage.setMessageType(MessageType.FILE_TRANSFER_REQUEST);
+                
+                try {
+                    OutputStream os = YychatClientConnection.s.getOutputStream();
+                    ObjectOutputStream oos = new ObjectOutputStream(os);
+                    oos.writeObject(fileMessage);
+                    
+                    // 提示用户等待对方确认
+                    JOptionPane.showMessageDialog(this, "文件传输请求已发送，请等待对方确认...");
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+            }
         }
     }
 

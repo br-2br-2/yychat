@@ -19,7 +19,7 @@ public class FriendList extends JFrame implements ActionListener, MouseListener,
     JButton myFriendButton1;
     JButton myStrangerButton1;
     JButton blackListButton1;
-    //实验五
+    // 实验五
     JScrollPane friendListScrollPane;
     JPanel friendListPanel;
     JLabel[] friendLabel = new JLabel[MYFRIENDCOUNT];
@@ -27,25 +27,35 @@ public class FriendList extends JFrame implements ActionListener, MouseListener,
     JButton myFriendButton2;
     JButton myStrangerButton2;
     JButton blackListButton2;
-    JScrollPane strangerListScrollPane;
-    JPanel strangerListPanel;
-    JLabel[] strangerLabel = new JLabel[STRANGERCOUNT];
-
+    // 新增群聊相关组件
+    JButton createGroupButton;
+    JButton manageGroupsButton;
     CardLayout c1;
     String name;
     JPanel addFriendJPanel;
     JButton addFriendButton;
+    
+    // 声明陌生人列表相关组件
+    JPanel strangerListPanel;
+    JScrollPane strangerListScrollPane;
+    JLabel[] strangerLabel = new JLabel[STRANGERCOUNT];
 
     public FriendList(String name, String allFriend) {
         this.name = name;
         //创建卡片一
         friendPanel = new JPanel(new BorderLayout());
-        addFriendJPanel = new JPanel(new GridLayout(2, 1));
+        addFriendJPanel = new JPanel(new GridLayout(4, 1)); // 修改为4行布局
         addFriendButton = new JButton("添加好友");
         addFriendButton.addActionListener(this);
         myFriendButton1 = new JButton("我的好友");
+        createGroupButton = new JButton("创建群聊"); // 添加创建群聊按钮
+        createGroupButton.addActionListener(this);
+        manageGroupsButton = new JButton("管理群聊"); // 添加管理群聊按钮
+        manageGroupsButton.addActionListener(this);
         addFriendJPanel.add(addFriendButton);
         addFriendJPanel.add(myFriendButton1);
+        addFriendJPanel.add(createGroupButton); // 添加到面板
+        addFriendJPanel.add(manageGroupsButton); // 添加到面板
         friendPanel.add(addFriendJPanel, "North");
 
         friendListPanel = new JPanel();
@@ -144,6 +154,36 @@ public class FriendList extends JFrame implements ActionListener, MouseListener,
             //this.friendLabel[Integer.parseInt(s)].setEnabled(true);
         }
     }
+    
+    /**
+     * 更新指定好友的在线状态
+     * @param friendName 好友用户名
+     * @param status 状态（在线/离线/忙碌等）
+     */
+    public void updateUserStatus(String friendName, String status) {
+        // 遍历好友列表，找到对应的好友并更新其状态显示
+        for (int i = 0; i < friendLabel.length; i++) {
+            if (friendLabel[i] != null && friendLabel[i].getText() != null && 
+                friendLabel[i].getText().equals(friendName)) {
+                // 根据状态更新标签的显示
+                if ("在线".equals(status)) {
+                    // 在好友名称旁边添加在线指示器
+                    friendLabel[i].setText(friendName + " [在线]");
+                    // 可以设置不同的颜色或图标来表示在线状态
+                    friendLabel[i].setForeground(Color.GREEN);
+                } else if ("离线".equals(status)) {
+                    // 移除在线指示器
+                    friendLabel[i].setText(friendName);
+                    friendLabel[i].setForeground(Color.BLACK);
+                } else {
+                    // 其他状态如"忙碌"、"离开"等
+                    friendLabel[i].setText(friendName + " [" + status + "]");
+                    friendLabel[i].setForeground(Color.ORANGE);
+                }
+                break;
+            }
+        }
+    }
 
     public void actionPerformed(ActionEvent arg0) {
         if (arg0.getSource() == addFriendButton) {
@@ -163,6 +203,36 @@ public class FriendList extends JFrame implements ActionListener, MouseListener,
                 }
             }
         }
+        
+        // 创建群聊功能
+        if (arg0.getSource() == createGroupButton) {
+            String groupId = JOptionPane.showInputDialog("请输入群聊ID：");
+            if (groupId != null && !groupId.trim().isEmpty()) {
+                String groupName = JOptionPane.showInputDialog("请输入群聊名称：");
+                if (groupName != null && !groupName.trim().isEmpty()) {
+                    Message mess = new Message();
+                    mess.setSender(name);
+                    mess.setReceiver("Server");
+                    mess.setGroupId(groupId);
+                    mess.setGroupName(groupName);
+                    mess.setMessageType(MessageType.CREATE_GROUP_CHAT);
+                    try {
+                        ObjectOutputStream oos = new ObjectOutputStream(YychatClientConnection.s.getOutputStream());
+                        oos.writeObject(mess);
+                        JOptionPane.showMessageDialog(this, "群聊创建请求已发送");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+        
+        // 管理群聊功能
+        if (arg0.getSource() == manageGroupsButton) {
+            // 这里可以打开群聊管理界面
+            JOptionPane.showMessageDialog(this, "群聊管理功能待实现");
+        }
+        
         if (arg0.getSource() == myFriendButton2)
             c1.show(this.getContentPane(), "card1");
         if (arg0.getSource() == myStrangerButton1)
@@ -178,20 +248,109 @@ public class FriendList extends JFrame implements ActionListener, MouseListener,
         }
     }
 
-    public void mouseEntered(MouseEvent arg0) {
-        JLabel j1 = (JLabel) arg0.getSource();
-        j1.setForeground(Color.red);
+    public void mousePressed(MouseEvent e) {
+        if (e.isPopupTrigger()) {
+            processRightClick(e);
+        }
     }
 
-    public void mouseExited(MouseEvent arg0) {
-        JLabel j1 = (JLabel) arg0.getSource();
-        j1.setForeground(Color.blue);
+    public void mouseReleased(MouseEvent e) {
+        if (e.isPopupTrigger()) {
+            processRightClick(e);
+        }
     }
 
-    public void mousePressed(MouseEvent arg0) {
-    }
-
-    public void mouseReleased(MouseEvent arg0) {
+    private void processRightClick(MouseEvent e) {
+        JLabel clickedLabel = (JLabel) e.getSource();
+        String friendName = clickedLabel.getText();
+        
+        // 创建右键菜单
+        JPopupMenu popupMenu = new JPopupMenu();
+        
+        // 删除好友菜单项
+        JMenuItem deleteFriendItem = new JMenuItem("删除好友");
+        deleteFriendItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int result = JOptionPane.showConfirmDialog(
+                    FriendList.this,
+                    "确定要删除好友 " + friendName + " 吗？",
+                    "确认删除",
+                    JOptionPane.YES_NO_OPTION
+                );
+                
+                if (result == JOptionPane.YES_OPTION) {
+                    Message mess = new Message();
+                    mess.setSender(name);
+                    mess.setReceiver("Server");
+                    mess.setContent(friendName);
+                    mess.setMessageType(MessageType.DELETE_FRIEND);
+                    try {
+                        ObjectOutputStream oos = new ObjectOutputStream(YychatClientConnection.s.getOutputStream());
+                        oos.writeObject(mess);
+                        JOptionPane.showMessageDialog(FriendList.this, "已删除好友 " + friendName);
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            }
+        });
+        
+        // 拉黑好友菜单项
+        JMenuItem blacklistFriendItem = new JMenuItem("拉黑好友");
+        blacklistFriendItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int result = JOptionPane.showConfirmDialog(
+                    FriendList.this,
+                    "确定要将 " + friendName + " 拉入黑名单吗？",
+                    "确认拉黑",
+                    JOptionPane.YES_NO_OPTION
+                );
+                
+                if (result == JOptionPane.YES_OPTION) {
+                    Message mess = new Message();
+                    mess.setSender(name);
+                    mess.setReceiver("Server");
+                    mess.setContent(friendName);
+                    mess.setMessageType(MessageType.BLACKLIST_FRIEND);
+                    try {
+                        ObjectOutputStream oos = new ObjectOutputStream(YychatClientConnection.s.getOutputStream());
+                        oos.writeObject(mess);
+                        JOptionPane.showMessageDialog(FriendList.this, "已将 " + friendName + " 拉入黑名单");
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            }
+        });
+        
+        popupMenu.add(deleteFriendItem);
+        popupMenu.add(blacklistFriendItem);
+        
+        // 查询好友状态菜单项
+        JMenuItem queryStatusItem = new JMenuItem("查询状态");
+        queryStatusItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // 创建查询状态消息
+                Message mess = new Message();
+                mess.setSender(name); // 当前用户
+                mess.setTargetUser(friendName); // 目标用户
+                mess.setMessageType(MessageType.REQUEST_USER_STATUS);
+                
+                try {
+                    ObjectOutputStream oos = new ObjectOutputStream(YychatClientConnection.s.getOutputStream());
+                    oos.writeObject(mess);
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+        
+        popupMenu.add(queryStatusItem);
+        
+        popupMenu.show(clickedLabel, e.getX(), e.getY());
     }
 
     @Override
