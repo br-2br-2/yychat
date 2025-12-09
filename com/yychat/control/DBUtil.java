@@ -130,4 +130,58 @@ public class DBUtil {
             e.printStackTrace();
         }
     }
+    
+    // 删除好友关系
+    public static boolean deleteFriend(String user1, String user2) {
+        int count = 0;
+        String deleteFriend_str = "DELETE FROM userrelation WHERE (masteruser=? AND slaveuser=?) OR (masteruser=? AND slaveuser=?)";
+        try {
+            PreparedStatement psmt = conn.prepareStatement(deleteFriend_str);
+            psmt.setString(1, user1);
+            psmt.setString(2, user2);
+            psmt.setString(3, user2);
+            psmt.setString(4, user1);
+            count = psmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return count > 0;
+    }
+    
+    // 将好友加入黑名单
+    public static boolean moveToBlacklist(String user, String friend) {
+        int count = 0;
+        // 先删除原有的好友关系
+        String deleteFriend_str = "DELETE FROM userrelation WHERE (masteruser=? AND slaveuser=?) OR (masteruser=? AND slaveuser=?)";
+        try {
+            PreparedStatement psmt = conn.prepareStatement(deleteFriend_str);
+            psmt.setString(1, user);
+            psmt.setString(2, friend);
+            psmt.setString(3, friend);
+            psmt.setString(4, user);
+            count = psmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+        
+        // 再插入黑名单关系（relation=0表示黑名单，relation=1表示普通好友）
+        String insertBlacklist_str = "INSERT INTO userrelation(masteruser, slaveuser, relation) VALUES (?, ?, 0)";
+        try {
+            PreparedStatement psmt = conn.prepareStatement(insertBlacklist_str);
+            psmt.setString(1, user);
+            psmt.setString(2, friend);
+            psmt.executeUpdate();
+            
+            // 同时也添加反向关系
+            psmt.setString(1, friend);
+            psmt.setString(2, user);
+            psmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
 }
