@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--引入头文件-->
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <!--引入外部资源文件 -->
+    <properties resource="db.properties"></properties>
+    <!-- 让log4j去记录sql日志   -->
+    <settings>
+        <setting name="logImpl" value="LOG4J"/>
+    </settings>
+<!--    <plugins>-->
+<!--            <property name="dialect" value="mysql"/>-->
+<!--    </plugins>-->
+    <!--    配置资源环境-->
+    <environments default="mysql">
+        <environment id="mysql">
+            <!-- 数据库事务管理类型 -->
+            <transactionManager type="JDBC"></transactionManager>
+            <!-- 数据源，type=pooled 说明是使用连接池方式，可以节省资源 -->
+            <dataSource type="com.ict.db.config.MyDruidDataSourceFactory">
+                <!-- 调用资源文件里的用户信息-->
+                <property name="driver" value="${jdbc.driver}"/>
+                <property name="url" value="${jdbc.url}"/>
+                <property name="username" value="${jdbc.username}"/>
+                <property name="password" value="${jdbc.password}"/>
+            </dataSource>
+        </environment>
+    </environments>
+    <!-- 配置映射 -->
+    <mappers>
+        <mapper resource="com/ict/db/mapperxml/UserMapper.xml"/>
+        <mapper resource="com/ict/db/mapperxml/UserRelationMapper.xml"/>
+        <mapper resource="com/ict/db/mapperxml/MessageMapper.xml"/>
+    </mappers>
+</configuration>
